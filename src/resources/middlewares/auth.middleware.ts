@@ -20,7 +20,7 @@ export class AuthMiddleware implements CanActivate {
 
     try {
       const decoded = jwt.verify(token, process.env.ACCESS_TOKEN);
-      request.user = decoded;
+      request.auth = decoded;
 
       return true;
     } catch (error) {

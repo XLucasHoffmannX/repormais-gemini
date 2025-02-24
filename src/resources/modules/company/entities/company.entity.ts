@@ -8,11 +8,15 @@ import {
   OneToMany,
 } from 'typeorm';
 import { UserEntity } from '../../user/entities/user.entity';
+import { UnitEntity } from '../../unity/entities/unity.entity';
 
 @Entity({ name: 'companies' })
 export class CompanyEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  @OneToMany(() => UnitEntity, (unit) => unit.company)
+  units: UnitEntity[]; // Relacionamento com as unidades dessa empresa
 
   @OneToMany(() => UserEntity, (user) => user.company)
   users: UserEntity[];

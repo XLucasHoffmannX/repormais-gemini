@@ -18,22 +18,31 @@ export class UserService {
     private companyRepository: Repository<CompanyEntity>,
   ) {}
 
-  private createToken(userId: string) {
-    return jsonwebtoken.sign({ id: userId }, process.env.ACCESS_TOKEN, {
-      expiresIn: '3d',
-    });
+  private createToken(userId: string, companyId: string) {
+    return jsonwebtoken.sign(
+      { id: userId, cId: companyId },
+      process.env.ACCESS_TOKEN,
+      {
+        expiresIn: '3d',
+      },
+    );
   }
 
-  private createRefreshToken(userId: string) {
-    return jsonwebtoken.sign({ id: userId }, process.env.REFRESH_TOKEN, {
-      expiresIn: '20d',
-    });
+  private createRefreshToken(userId: string, companyId: string) {
+    return jsonwebtoken.sign(
+      { id: userId, cId: companyId },
+      process.env.REFRESH_TOKEN,
+      {
+        expiresIn: '20d',
+      },
+    );
   }
 
   async loginUserService(data: LoginUserDto) {
     try {
-      const userExists = await this.userRepository.findOneBy({
-        email: data.email,
+      const userExists = await this.userRepository.findOne({
+        where: { email: data.email },
+        relations: ['company'], // Carrega a empresa automaticamente
       });
 
       // verifica se o usuario existe
@@ -57,9 +66,20 @@ export class UserService {
         );
       }
 
+      // Verifica se a empresa foi carregada corretamente
+      if (!userExists.company) {
+        throw new HttpException('Empresa não encontrada', HttpStatus.NOT_FOUND);
+      }
+
       // tokens
-      const accessToken = this.createToken(userExists.id);
-      const refreshToken = this.createRefreshToken(userExists.id);
+      const accessToken = this.createToken(
+        userExists.id,
+        userExists.company.id,
+      );
+      const refreshToken = this.createRefreshToken(
+        userExists.id,
+        userExists.company.id,
+      );
 
       return {
         user: user,
@@ -131,8 +151,11 @@ export class UserService {
 
       const userCreated = await this.userRepository.save(user);
 
-      const accessToken = this.createToken(userCreated.id);
-      const refreshToken = this.createRefreshToken(userCreated.id);
+      const accessToken = this.createToken(userCreated.id, companyCreated.id);
+      const refreshToken = this.createRefreshToken(
+        userCreated.id,
+        companyCreated.id,
+      );
 
       return {
         user: userCreated,

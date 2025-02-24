@@ -1,26 +1,135 @@
-import { Injectable } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { ProductEntity } from './entities/product.entity';
+import { UnitEntity } from '../unity/entities/unity.entity';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { validate as isUUID } from 'uuid';
+import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class ProductService {
-  create(createProductDto: CreateProductDto) {
-    return 'This action adds a new product';
+  constructor(
+    @InjectRepository(ProductEntity)
+    private readonly productRepository: Repository<ProductEntity>,
+
+    @InjectRepository(UnitEntity)
+    private readonly unitRepository: Repository<UnitEntity>,
+  ) {}
+
+  async create(dto: CreateProductDto): Promise<ProductEntity> {
+    const unit = await this.unitRepository.findOne({
+      where: { id: dto.unitEntityId },
+    });
+
+    if (!unit) {
+      throw new NotFoundException('Unidade não encontrada');
+    }
+
+    if (dto.barcode) {
+      const existingProduct = await this.productRepository.findOne({
+        where: { barcode: dto.barcode },
+      });
+
+      if (existingProduct) {
+        throw new HttpException(
+          'Já existe um produto com este código de barras!',
+          HttpStatus.CONFLICT,
+        );
+      }
+    }
+
+    const product = this.productRepository.create({ ...dto, unitEntity: unit });
+    return this.productRepository.save(product);
   }
 
-  findAll() {
-    return `This action returns all product`;
+  /* paginate */
+  /* Paginação */
+  async findByCompany(
+    companyId: string,
+    options: IPaginationOptions,
+    search?: string,
+    unitId?: string,
+  ) {
+    const queryBuilder = this.productRepository
+      .createQueryBuilder('p')
+      .innerJoinAndSelect('p.unitEntity', 'unit') // Corrigido: Nome correto da relação
+      .innerJoin('unit.company', 'company')
+      .where('company.id = :companyId', { companyId });
+
+    if (unitId) {
+      queryBuilder.andWhere('unit.id = :unitId', { unitId });
+    }
+
+    if (search) {
+      queryBuilder.andWhere('p.name ILIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    queryBuilder.orderBy('p.createdAt', 'DESC');
+
+    return paginate<ProductEntity>(queryBuilder, options);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} product`;
+  async findAll(companyId: string): Promise<ProductEntity[]> {
+    return this.productRepository.find({
+      where: { unitEntity: { company: { id: companyId } } },
+      relations: ['unitEntity', 'unitEntity.company'],
+    });
   }
 
-  update(id: number, updateProductDto: UpdateProductDto) {
-    return `This action updates a #${id} product`;
+  async findOne(id: string, companyId: string): Promise<ProductEntity> {
+    try {
+      if (!isUUID(id)) {
+        throw new BadRequestException(`ID inválido: ${id}`);
+      }
+      const product = await this.productRepository.findOne({
+        where: { unitEntity: { company: { id: companyId } } },
+        relations: ['unitEntity', 'unitEntity.company'],
+      });
+
+      if (!product) {
+        throw new NotFoundException('Produto não encontrado');
+      }
+
+      return product;
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} product`;
+  async update(id: string, dto: UpdateProductDto): Promise<ProductEntity> {
+    const product = await this.productRepository.findOne({
+      where: { id },
+      relations: ['unitEntity'],
+    });
+
+    if (!product) {
+      throw new NotFoundException('Produto não encontrado');
+    }
+
+    Object.assign(product, dto);
+    return this.productRepository.save(product);
+  }
+
+  async delete(id: string): Promise<void> {
+    const product = await this.productRepository.findOne({
+      where: { id },
+      relations: ['unitEntity'],
+    });
+
+    if (!product) {
+      throw new NotFoundException('Produto não encontrado');
+    }
+
+    await this.productRepository.softRemove(product);
   }
 }
