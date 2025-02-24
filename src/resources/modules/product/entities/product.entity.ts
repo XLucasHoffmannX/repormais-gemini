@@ -49,7 +49,7 @@ export class ProductEntity {
     type: 'decimal',
     precision: 10,
     scale: 2,
-    nullable: false,
+    nullable: true,
   })
   salePrice: number; // Preço de venda do produto
 
