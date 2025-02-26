@@ -10,7 +10,7 @@ export const createProductSchema = z.object({
   category: z.string().max(50).optional(),
   brand: z.string().max(50).optional(),
   supplier: z.string().max(100).optional(),
-  costPrice: z.number({ required_error: requiredError }).positive(),
+  costPrice: z.number({ required_error: requiredError }).positive().optional(),
   salePrice: z.number({ required_error: requiredError }).positive().optional(),
   stockQuantity: z.number().int().default(0),
   minimumStock: z.number().int().default(0),

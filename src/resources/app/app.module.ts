@@ -7,6 +7,7 @@ import { UserModule } from '../modules/user/user.module';
 import { CompanyModule } from '../modules/company/company.module';
 import { UnityModule } from '../modules/unity/unity.module';
 import { ProductModule } from '../modules/product/product.module';
+import { WithdrawModule } from '../modules/withdraw/withdraw.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { ProductModule } from '../modules/product/product.module';
     CompanyModule,
     UnityModule,
     ProductModule,
+    WithdrawModule,
   ],
   controllers: [AppController],
   providers: [AppService],

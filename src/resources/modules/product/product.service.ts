@@ -25,42 +25,49 @@ export class ProductService {
   ) {}
 
   async create(dto: CreateProductDto): Promise<ProductEntity> {
-    const unit = await this.unitRepository.findOne({
-      where: { id: dto.unitEntityId },
-    });
-
-    if (!unit) {
-      throw new NotFoundException('Unidade não encontrada');
-    }
-
-    if (dto.barcode) {
-      const existingProduct = await this.productRepository.findOne({
-        where: { barcode: dto.barcode },
+    try {
+      const unit = await this.unitRepository.findOne({
+        where: { id: dto.unitEntityId },
       });
 
-      if (existingProduct) {
-        throw new HttpException(
-          'Já existe um produto com este código de barras!',
-          HttpStatus.CONFLICT,
-        );
+      if (!unit) {
+        throw new NotFoundException('Unidade não encontrada');
       }
-    }
 
-    const product = this.productRepository.create({ ...dto, unitEntity: unit });
-    return this.productRepository.save(product);
+      if (dto.barcode) {
+        const existingProduct = await this.productRepository.findOne({
+          where: { barcode: dto.barcode },
+        });
+
+        if (existingProduct) {
+          throw new HttpException(
+            'Já existe um produto com este código de barras!',
+            HttpStatus.BAD_REQUEST,
+          );
+        }
+      }
+
+      const product = this.productRepository.create({
+        ...dto,
+        unitEntity: unit,
+      });
+      return this.productRepository.save(product);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 
   /* paginate */
-  /* Paginação */
   async findByCompany(
     companyId: string,
     options: IPaginationOptions,
     search?: string,
     unitId?: string,
+    barcode?: string,
   ) {
     const queryBuilder = this.productRepository
       .createQueryBuilder('p')
-      .innerJoinAndSelect('p.unitEntity', 'unit') // Corrigido: Nome correto da relação
+      .innerJoinAndSelect('p.unitEntity', 'unit')
       .innerJoin('unit.company', 'company')
       .where('company.id = :companyId', { companyId });
 
@@ -72,6 +79,10 @@ export class ProductService {
       queryBuilder.andWhere('p.name ILIKE :search', {
         search: `%${search}%`,
       });
+    }
+
+    if (barcode) {
+      queryBuilder.andWhere('TRIM(p.barcode) = TRIM(:barcode)', { barcode });
     }
 
     queryBuilder.orderBy('p.createdAt', 'DESC');

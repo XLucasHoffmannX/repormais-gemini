@@ -40,7 +40,7 @@ export class ProductEntity {
     type: 'decimal',
     precision: 10,
     scale: 2,
-    nullable: false,
+    nullable: true,
   })
   costPrice: number; // Preço de custo do produto
 

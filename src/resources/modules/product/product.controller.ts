@@ -44,6 +44,7 @@ export class ProductController {
     @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
     @Query('search') search?: string,
     @Query('unit') unitId?: string,
+    @Query('barcode') barcode?: string,
   ) {
     const companyId = req.auth.cId;
 
@@ -52,6 +53,7 @@ export class ProductController {
       { page, limit, route: `${req.protocol}://${req.get('host')}/products` },
       search,
       unitId,
+      barcode,
     );
   }
 
