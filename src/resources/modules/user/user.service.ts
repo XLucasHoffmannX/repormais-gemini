@@ -7,6 +7,7 @@ import * as jsonwebtoken from 'jsonwebtoken';
 import * as bcrypt from 'bcrypt';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { CompanyEntity } from '../company/entities/company.entity';
+import { UnitEntity } from '../unity/entities/unity.entity';
 
 @Injectable()
 export class UserService {
@@ -16,6 +17,9 @@ export class UserService {
 
     @InjectRepository(CompanyEntity)
     private companyRepository: Repository<CompanyEntity>,
+
+    @InjectRepository(UnitEntity)
+    private unitRepository: Repository<UnitEntity>,
   ) {}
 
   private createToken(userId: string, companyId: string) {
@@ -143,6 +147,13 @@ export class UserService {
       });
 
       const companyCreated = await this.companyRepository.save(company);
+
+      const unit = this.unitRepository.create({
+        name: 'Unidade',
+        company: companyCreated,
+      });
+
+      await this.unitRepository.save(unit);
 
       const user = this.userRepository.create({
         ...data,

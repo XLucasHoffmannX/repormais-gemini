@@ -3,9 +3,12 @@ import { WithdrawDto, withdrawSchema } from './dto/create-withdraw.dto';
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Get,
   Param,
+  ParseIntPipe,
   Post,
+  Query,
   Req,
   UseGuards,
   UsePipes,
@@ -26,10 +29,22 @@ export class WithdrawController {
 
   @UseGuards(AuthMiddleware)
   @Get()
-  async getAllWithdraws(@Req() req) {
+  async getAllWithdraws(
+    @Req() req,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query('type') type?: string,
+    @Query('search') search?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
     const companyId = req.auth.cId;
 
-    return this.withdrawService.findAll(companyId);
+    return this.withdrawService.findAll(
+      companyId,
+      { page, limit, route: `${req.protocol}://${req.get('host')}/withdraws` },
+      { type, startDate, endDate, search },
+    );
   }
 
   @UseGuards(AuthMiddleware)

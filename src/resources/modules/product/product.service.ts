@@ -97,13 +97,38 @@ export class ProductService {
     });
   }
 
+  async findAllByUnit(
+    companyId: string,
+    unitId: string,
+    search?: string, // 🔥 Adicionado parâmetro de busca opcional
+  ): Promise<ProductEntity[]> {
+    const queryBuilder = this.productRepository
+      .createQueryBuilder('product')
+      .innerJoinAndSelect('product.unitEntity', 'unit')
+      .innerJoinAndSelect('unit.company', 'company')
+      .where('unit.id = :unitId', { unitId })
+      .andWhere('company.id = :companyId', { companyId });
+
+    if (search) {
+      queryBuilder.andWhere('LOWER(product.name) LIKE LOWER(:search)', {
+        search: `%${search}%`,
+      });
+    }
+
+    return queryBuilder.getMany();
+  }
+
   async findOne(id: string, companyId: string): Promise<ProductEntity> {
     try {
       if (!isUUID(id)) {
         throw new BadRequestException(`ID inválido: ${id}`);
       }
+
       const product = await this.productRepository.findOne({
-        where: { unitEntity: { company: { id: companyId } } },
+        where: {
+          id,
+          unitEntity: { company: { id: companyId } },
+        },
         relations: ['unitEntity', 'unitEntity.company'],
       });
 
@@ -142,5 +167,39 @@ export class ProductService {
     }
 
     await this.productRepository.softRemove(product);
+  }
+
+  async findDeletedProducts(
+    companyId: string,
+    search?: string,
+  ): Promise<ProductEntity[]> {
+    const queryBuilder = this.productRepository
+      .createQueryBuilder('product')
+      .withDeleted()
+      .innerJoinAndSelect('product.unitEntity', 'unit')
+      .innerJoinAndSelect('unit.company', 'company')
+      .where('company.id = :companyId', { companyId })
+      .andWhere('product.deletedAt IS NOT NULL');
+
+    if (search) {
+      queryBuilder.andWhere('LOWER(product.name) LIKE LOWER(:search)', {
+        search: `%${search}%`,
+      });
+    }
+
+    return queryBuilder.getMany();
+  }
+
+  async restoreProduct(id: string): Promise<void> {
+    const product = await this.productRepository.findOne({
+      where: { id },
+      withDeleted: true,
+    });
+
+    if (!product) {
+      throw new NotFoundException('Produto não encontrado na lixeira.');
+    }
+
+    await this.productRepository.restore(id);
   }
 }

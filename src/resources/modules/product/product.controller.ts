@@ -29,6 +29,17 @@ export class ProductController {
   constructor(private readonly productService: ProductService) {}
 
   @UseGuards(AuthMiddleware)
+  @Get('/trash')
+  async findDeletedProducts(
+    @Req() req,
+    @Query('search') search?: string,
+  ): Promise<ProductEntity[]> {
+    const companyId = req.auth.cId;
+
+    return this.productService.findDeletedProducts(companyId, search);
+  }
+
+  @UseGuards(AuthMiddleware)
   @Post()
   @UsePipes(new ZodValidationPipe(createProductSchema))
   async create(@Body() body: CreateProductDto): Promise<ProductEntity> {
@@ -66,6 +77,18 @@ export class ProductController {
   }
 
   @UseGuards(AuthMiddleware)
+  @Get('/unit/:unitId')
+  async findAllByUnit(
+    @Req() req,
+    @Param('unitId', new ZodValidationPipe(uuidSchema)) unitId: string,
+    @Query('search') search?: string,
+  ): Promise<ProductEntity[]> {
+    const companyId = req.auth.cId;
+
+    return this.productService.findAllByUnit(companyId, unitId, search);
+  }
+
+  @UseGuards(AuthMiddleware)
   @Get(':id')
   async findOne(
     @Req() req,
@@ -90,5 +113,13 @@ export class ProductController {
   @Delete(':id')
   async delete(@Param('id') id: string): Promise<void> {
     return this.productService.delete(id);
+  }
+
+  @UseGuards(AuthMiddleware)
+  @Post('/restore/:id')
+  async restoreProduct(
+    @Param('id', new ZodValidationPipe(uuidSchema)) id: string,
+  ): Promise<void> {
+    return this.productService.restoreProduct(id);
   }
 }

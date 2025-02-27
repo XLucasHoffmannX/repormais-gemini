@@ -10,6 +10,7 @@ import { ProductEntity } from '../product/entities/product.entity';
 import { UnitEntity } from '../unity/entities/unity.entity';
 import { UserEntity } from '../user/entities/user.entity';
 import { WithdrawDto } from './dto/create-withdraw.dto';
+import { IPaginationOptions, paginate } from 'nestjs-typeorm-paginate';
 
 @Injectable()
 export class WithdrawService {
@@ -64,11 +65,52 @@ export class WithdrawService {
     return await this.withdrawRepository.save(withdraw);
   }
 
-  async findAll(companyId: string): Promise<WithdrawEntity[]> {
-    return this.withdrawRepository.find({
-      where: { unit: { company: { id: companyId } } },
-      relations: ['product', 'unit', 'user'],
-    });
+  async findAll(
+    companyId: string,
+    options: IPaginationOptions,
+    filters: {
+      type?: string;
+      startDate?: string;
+      endDate?: string;
+      search?: string;
+    },
+  ) {
+    const { type, startDate, endDate, search } = filters;
+
+    const queryBuilder = this.withdrawRepository
+      .createQueryBuilder('w')
+      .withDeleted() // 🔥 Inclui registros soft-deleted
+      .innerJoinAndSelect('w.product', 'product')
+      .innerJoinAndSelect('w.unit', 'unit')
+      .innerJoin('unit.company', 'company')
+      .innerJoinAndSelect('w.user', 'user')
+      .where('company.id = :companyId', { companyId });
+
+    if (type) {
+      queryBuilder.andWhere('w.type = :type', { type });
+    }
+
+    if (search) {
+      queryBuilder.andWhere('LOWER(product.name) LIKE LOWER(:search)', {
+        search: `%${search}%`,
+      });
+    }
+
+    if (startDate || endDate) {
+      const start = startDate ? new Date(startDate) : new Date('1900-01-01');
+      const end = endDate ? new Date(endDate) : new Date();
+
+      end.setHours(23, 59, 59, 999);
+
+      queryBuilder.andWhere('w.createdAt BETWEEN :startDate AND :endDate', {
+        startDate: start.toISOString(),
+        endDate: end.toISOString(),
+      });
+    }
+
+    queryBuilder.orderBy('w.createdAt', 'DESC');
+
+    return paginate<WithdrawEntity>(queryBuilder, options);
   }
 
   async findByProduct(
