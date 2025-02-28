@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { LessThanOrEqual, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { NoticeEntity, NoticeType } from './entities/notice.entity';
 import { ProductEntity } from '../product/entities/product.entity';
 
@@ -14,17 +14,21 @@ export class NoticeService {
     private readonly productRepository: Repository<ProductEntity>,
   ) {}
 
-  async generateNotices() {
+  async generateNotices(companyId: string) {
     const today = new Date();
     const futureDate = new Date();
     futureDate.setDate(today.getDate() + 30); // Produtos que vencem nos próximos 30 dias
 
-    const productsWithIssues = await this.productRepository.find({
-      where: [
-        { expirationDate: LessThanOrEqual(futureDate) }, // Validade próxima
-        { stockQuantity: LessThanOrEqual(0) }, // Estoque abaixo do mínimo
-      ],
-    });
+    const productsWithIssues = await this.productRepository
+      .createQueryBuilder('product')
+      .innerJoin('product.unitEntity', 'unit')
+      .innerJoin('unit.company', 'company')
+      .where('company.id = :companyId', { companyId })
+      .andWhere(
+        '(product.expirationDate <= :futureDate OR product.stockQuantity <= product.minimumStock)',
+        { futureDate },
+      )
+      .getMany();
 
     for (const product of productsWithIssues) {
       const existingNotice = await this.noticeRepository.findOne({
@@ -47,9 +51,9 @@ export class NoticeService {
     }
   }
 
-  async getNotices() {
+  async getNotices(companyId) {
     /* gera automaticamente */
-    await this.generateNotices();
+    await this.generateNotices(companyId);
 
     return this.noticeRepository.find({
       where: { resolved: false },

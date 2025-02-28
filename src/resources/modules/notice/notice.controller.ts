@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Param, UseGuards, Req } from '@nestjs/common';
 import { NoticeService } from './notice.service';
 import { AuthMiddleware } from 'src/resources/middlewares';
 
@@ -8,14 +8,17 @@ export class NoticeController {
 
   @UseGuards(AuthMiddleware)
   @Get()
-  async getNotices() {
-    return this.noticeService.getNotices();
+  async getNotices(@Req() req) {
+    const companyId = req.auth.cId;
+
+    return this.noticeService.getNotices(companyId);
   }
 
   @UseGuards(AuthMiddleware)
   @Post('/generate')
-  async generateNotices() {
-    return this.noticeService.generateNotices();
+  async generateNotices(@Req() req) {
+    const companyId = req.auth.cId;
+    return this.noticeService.generateNotices(companyId);
   }
 
   @UseGuards(AuthMiddleware)
