@@ -20,8 +20,11 @@ import { NoticeModule } from '../modules/notice/notice.module';
       database: process.env.DB_DATABASE,
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
-      synchronize: true,
       entities: [__dirname + '/../**/*.entity{.js, .ts}'],
+      synchronize: process.env.DB_DATABASE === 'prod' ? false : true,
+      ssl: {
+        rejectUnauthorized: false,
+      },
     }),
     UserModule,
     CompanyModule,
