@@ -8,6 +8,7 @@ import { CompanyModule } from '../modules/company/company.module';
 import { UnityModule } from '../modules/unity/unity.module';
 import { ProductModule } from '../modules/product/product.module';
 import { WithdrawModule } from '../modules/withdraw/withdraw.module';
+import { NoticeModule } from '../modules/notice/notice.module';
 
 @Module({
   imports: [
@@ -27,6 +28,7 @@ import { WithdrawModule } from '../modules/withdraw/withdraw.module';
     UnityModule,
     ProductModule,
     WithdrawModule,
+    NoticeModule,
   ],
   controllers: [AppController],
   providers: [AppService],

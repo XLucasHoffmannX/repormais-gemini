@@ -4,15 +4,21 @@ import {
   DeleteDateColumn,
   Entity,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { UnitEntity } from '../../unity/entities/unity.entity';
+import { NoticeEntity } from '../../notice/entities/notice.entity';
 
 @Entity({ name: 'products' })
 export class ProductEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string; // Identificador único do produto
+
+  /* gerar avisos */
+  @OneToMany(() => NoticeEntity, (notice) => notice.product)
+  notices: NoticeEntity[];
 
   @ManyToOne(() => UnitEntity, (unit) => unit.products, { nullable: false })
   unitEntity: UnitEntity; // Relacionamento com a unidade onde o produto está armazenado
