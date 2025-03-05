@@ -51,15 +51,18 @@ export class NoticeService {
     }
   }
 
-  async getNotices(companyId) {
-    /* gera automaticamente */
+  async getNotices(companyId: string) {
     await this.generateNotices(companyId);
 
-    return this.noticeRepository.find({
-      where: { resolved: false },
-      relations: ['product'],
-      order: { createdAt: 'DESC' },
-    });
+    return this.noticeRepository
+      .createQueryBuilder('notice')
+      .innerJoinAndSelect('notice.product', 'product')
+      .innerJoin('product.unitEntity', 'unit')
+      .innerJoin('unit.company', 'company')
+      .where('notice.resolved = :resolved', { resolved: false })
+      .andWhere('company.id = :companyId', { companyId })
+      .orderBy('notice.createdAt', 'DESC')
+      .getMany();
   }
 
   async resolveNotice(id: string) {

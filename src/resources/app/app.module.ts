@@ -10,6 +10,9 @@ import { ProductModule } from '../modules/product/product.module';
 import { WithdrawModule } from '../modules/withdraw/withdraw.module';
 import { NoticeModule } from '../modules/notice/notice.module';
 
+const isProduction = process.env.NODE_ENV === 'production';
+const isSSLEnabled = process.env.DB_SSL_ENABLE === 'true';
+
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -21,10 +24,8 @@ import { NoticeModule } from '../modules/notice/notice.module';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       entities: [__dirname + '/../**/*.entity{.js, .ts}'],
-      synchronize: process.env.DB_DATABASE === 'prod' ? false : true,
-      ssl: {
-        rejectUnauthorized: false,
-      },
+      synchronize: !isProduction,
+      ssl: isSSLEnabled ? { rejectUnauthorized: true } : false,
     }),
     UserModule,
     CompanyModule,
