@@ -38,6 +38,12 @@ export class UserController {
     return this.userService.getUserLoggedService(user);
   }
 
+  @Post('/impersonate/:userId')
+  @UseGuards(AuthMiddleware)
+  async impersonateUser(@Param('userId') userId: string) {
+    return this.userService.impersonateUserService(userId);
+  }
+
   @Get()
   findAll() {
     return this.userService.findAll();

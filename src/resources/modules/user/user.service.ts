@@ -179,6 +179,35 @@ export class UserService {
     }
   }
 
+  async impersonateUserService(userId: string) {
+    // Busque o usuário
+    const user = await this.userRepository.findOne({
+      where: { id: userId },
+      relations: ['company'],
+    });
+
+    if (!user) {
+      throw new HttpException('Usuário não encontrado', HttpStatus.NOT_FOUND);
+    }
+
+    if (!user.company) {
+      throw new HttpException('Empresa não encontrada', HttpStatus.NOT_FOUND);
+    }
+
+    // Gere os tokens
+    const accessToken = this.createToken(user.id, user.company.id);
+    const refreshToken = this.createRefreshToken(user.id, user.company.id);
+
+    return {
+      user: {
+        ...user,
+        password: undefined, // Nunca retorne a senha
+      },
+      token: accessToken,
+      refreshToken: refreshToken,
+    };
+  }
+
   findAll() {
     return `This action returns all user`;
   }
