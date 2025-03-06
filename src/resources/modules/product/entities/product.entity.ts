@@ -43,12 +43,9 @@ export class ProductEntity {
 
   @Column({
     name: 'cost_price',
-    type: 'decimal',
-    precision: 10,
-    scale: 2,
     nullable: true,
   })
-  costPrice: number; // Preço de custo do produto
+  costPrice: string; // Preço de custo do produto
 
   @Column({
     name: 'sale_price',

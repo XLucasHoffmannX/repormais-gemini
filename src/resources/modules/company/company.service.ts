@@ -35,7 +35,6 @@ export class CompanyService {
     try {
       const company = await this.companyRepository.findOne({
         where: { id },
-        relations: ['users', 'stores'],
       });
 
       if (!company) {
