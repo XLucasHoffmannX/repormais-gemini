@@ -31,6 +31,9 @@ export class NoticeService {
       .getMany();
 
     for (const product of productsWithIssues) {
+      const messageStock = `Produto "${product.name}" está com ${product.stockQuantity} unidades, abaixo do mínimo de ${product.minimumStock}.`;
+      const messageExpirationDate = `Produto "${product.name}" prestes a vencer.`;
+
       const existingNotice = await this.noticeRepository.findOne({
         where: { product: { id: product.id }, resolved: false },
       });
@@ -38,7 +41,10 @@ export class NoticeService {
       if (!existingNotice) {
         const notice = this.noticeRepository.create({
           product,
-          message: `Produto "${product.name}" está com ${product.stockQuantity} unidades, abaixo do mínimo de ${product.minimumStock}.`,
+          message:
+            new Date(product.expirationDate) <= futureDate
+              ? messageExpirationDate
+              : messageStock,
           type:
             product.expirationDate && product.expirationDate < futureDate
               ? NoticeType.EXPIRATION_WARNING
