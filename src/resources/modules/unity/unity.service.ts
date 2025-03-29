@@ -6,7 +6,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindOptionsWhere, Like, Repository } from 'typeorm';
 import { UnitEntity } from './entities/unity.entity';
 import { CreateUnitDto } from './dto/create-unity.dto';
 import { UpdateUnitDto } from './dto/update-unity.dto';
@@ -46,7 +46,7 @@ export class UnityService {
   }
 
   // Buscar todas as unidades
-  async findAll(companyId: string): Promise<UnitEntity[]> {
+  async findAll(companyId: string, search?: string): Promise<UnitEntity[]> {
     try {
       const company = await this.companyRepository.findOne({
         where: { id: companyId },
@@ -56,13 +56,21 @@ export class UnityService {
         throw new HttpException('Empresa não encontrada', HttpStatus.NOT_FOUND);
       }
 
+      const where: FindOptionsWhere<UnitEntity> = {
+        company: { id: companyId },
+      };
+      if (search) {
+        where.name = Like(`%${search}%`);
+      }
+
       return this.unitRepository.find({
-        where: { company: { id: companyId } },
+        where,
       });
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }
   }
+
   async findOne(id: string, companyId: string): Promise<UnitEntity> {
     try {
       if (!isUUID(id)) {

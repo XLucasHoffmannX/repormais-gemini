@@ -24,7 +24,7 @@ export class CompanyService {
   async findAll() {
     try {
       return await this.companyRepository.find({
-        relations: ['users', 'stores'],
+        relations: ['users', 'units'],
       });
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);

@@ -9,6 +9,7 @@ import {
   Patch,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { CreateUnitDto, createUnitSchema } from './dto/create-unity.dto';
 import { UnitEntity } from './entities/unity.entity';
@@ -33,10 +34,13 @@ export class UnityController {
   // Buscar todas as unidades
   @UseGuards(AuthMiddleware)
   @Get()
-  async findAll(@Req() req): Promise<UnitEntity[]> {
+  async findAll(
+    @Req() req,
+    @Query('search') search?: string,
+  ): Promise<UnitEntity[]> {
     const companyId = req.auth.cId;
 
-    return this.unitService.findAll(companyId);
+    return this.unitService.findAll(companyId, search);
   }
 
   // Buscar unidade por ID
