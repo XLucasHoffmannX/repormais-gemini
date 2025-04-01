@@ -100,7 +100,7 @@ export class ProductService {
   async findAllByUnit(
     companyId: string,
     unitId: string,
-    search?: string, // 🔥 Adicionado parâmetro de busca opcional
+    search?: string,
   ): Promise<ProductEntity[]> {
     const queryBuilder = this.productRepository
       .createQueryBuilder('product')
