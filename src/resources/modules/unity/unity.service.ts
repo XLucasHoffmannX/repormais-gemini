@@ -24,22 +24,37 @@ export class UnityService {
   ) {}
 
   // Criar uma nova unidade
-  async create(createUnitDto: CreateUnitDto): Promise<UnitEntity> {
+  async create(
+    createUnitDto: CreateUnitDto,
+    companyId: string,
+  ): Promise<UnitEntity> {
     try {
       const company = await this.companyRepository.findOne({
-        where: { id: createUnitDto.companyId },
+        where: { id: companyId },
+        relations: ['units'],
       });
 
       if (!company) {
         throw new HttpException('Empresa não encontrada', HttpStatus.NOT_FOUND);
       }
 
-      const unit = this.unitRepository.create({
-        ...createUnitDto,
-        company: company,
+      const unitCount = await this.unitRepository.count({
+        where: { company: { id: companyId } },
       });
 
-      return this.unitRepository.save({ ...unit });
+      if (unitCount >= 4) {
+        throw new HttpException(
+          'Limite de 4 unidades atingido!',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      const unit = this.unitRepository.create({
+        ...createUnitDto,
+        company,
+      });
+
+      return this.unitRepository.save(unit);
     } catch (error) {
       throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
     }

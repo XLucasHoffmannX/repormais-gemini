@@ -27,8 +27,10 @@ export class UnityController {
   @UseGuards(AuthMiddleware)
   @Post()
   @UsePipes(new ZodValidationPipe(createUnitSchema)) // Usando o ZodValidationPipe
-  async create(@Body() body: CreateUnitDto): Promise<UnitEntity> {
-    return this.unitService.create(body);
+  async create(@Req() req, @Body() body: CreateUnitDto): Promise<UnitEntity> {
+    const companyId = req.auth.cId;
+
+    return this.unitService.create(body, companyId);
   }
 
   // Buscar todas as unidades
